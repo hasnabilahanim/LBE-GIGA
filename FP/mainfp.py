@@ -1,6 +1,18 @@
 import pygame
 import random
 
+def reset_ingredients():
+    global ing_x1, ing_y1, ing_x2, ing_y2, ing_x3, ing_y3, ing_x4, ing_y4
+    global has_rice, has_meat, has_vegs, has_tempe, carried_food
+    
+    ing_x1, ing_y1 = start_x1, start_y1
+    ing_x2, ing_y2 = start_x2, start_y2
+    ing_x3, ing_y3 = start_x3, start_y3
+    ing_x4, ing_y4 = start_x4, start_y4
+    
+    has_rice = has_meat = has_vegs = has_tempe = False
+    carried_food = None
+
 pygame.init()
 
 WIDTH = 1000
@@ -100,6 +112,9 @@ has_vegs = False
 has_tempe = False
 carried_food = None
 score = 0
+angry_count = 0
+MAX_ANGRY = 3
+game_over = False
 
 stove_rect = pygame.Rect(700, 150, 50, 50)
 score_font = pygame.font.SysFont("Arial", 40, bold=True)
@@ -111,6 +126,22 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    #game over
+    if game_over:
+        screen.fill((0, 0, 0))
+
+        game_over_font = pygame.font.SysFont("Arial", 100, bold=True)
+        game_over_text = game_over_font.render("GAME OVER", True, (255, 0, 0))
+        game_over_rect = game_over_text.get_rect(center=(WIDTH//2, HEIGHT//2 - 50))
+        screen.blit(game_over_text, game_over_rect)
+
+        final_score_text = score_font.render(f"Final Score: {score}", True, (255, 255, 255))
+        final_score_rect = final_score_text.get_rect(center=(WIDTH//2, HEIGHT//2 + 50))
+        screen.blit(final_score_text, final_score_rect)
+        
+        pygame.display.update()
+        clock.tick(60)
+        continue
 
     #player keys
     keys = pygame.key.get_pressed()
@@ -215,12 +246,14 @@ while running:
             cat_state = "angry"
             happy_angry_timer = current_time + 3000
             cat_requested_food = None
-
+            
+            angry_count += 1
+            
+            #reset ingredients
             ing_x1, ing_y1 = start_x1, start_y1
             ing_x2, ing_y2 = start_x2, start_y2
             ing_x3, ing_y3 = start_x3, start_y3
             ing_x4, ing_y4 = start_x4, start_y4
-
             has_rice = has_meat = has_vegs = has_tempe = False
             carried_food = None
 
@@ -236,18 +269,22 @@ while running:
                 happy_angry_timer = current_time + 3000
                 cat_requested_food = None
                 
+                angry_count += 1
+                
                 ing_x1, ing_y1 = start_x1, start_y1
                 ing_x2, ing_y2 = start_x2, start_y2
                 ing_x3, ing_y3 = start_x3, start_y3
                 ing_x4, ing_y4 = start_x4, start_y4
-                
                 has_rice = has_meat = has_vegs = has_tempe = False
                 carried_food = None
                 
     elif cat_state == "happy" or cat_state == "angry":
         if current_time >= happy_angry_timer:
-            cat_state = "waiting"
-            next_request_time = current_time + random.randint(2000, 10000)
+            if angry_count >= MAX_ANGRY:
+                game_over = True
+            else:
+                cat_state = "waiting"
+                next_request_time = current_time + random.randint(2000, 10000)
 
     screen.fill((203, 236, 145))
     score_surface = score_font.render(f"Score: {score}", True, (0, 0, 0))
@@ -267,8 +304,6 @@ while running:
     #draw makanan gato
     if cat_state == "requesting" and cat_requested_food is not None:
         bubble_rect = pygame.Rect(cat_x + cat_width//2 - 20, cat_y - 60, 40, 40)
-        # pygame.draw.rect(screen, (255, 255, 255), bubble_rect)
-        # pygame.draw.rect(screen, (0, 0, 0), bubble_rect, 2)
         screen.blit(cat_requested_food, (bubble_rect.x + 5, bubble_rect.y + 5))
         
         time_left = cat_timer - current_time
